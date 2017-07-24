@@ -574,6 +574,18 @@ CALLBACK takes one argument (the response data) which is a list."
       (let ((process-connection-type nil))  ; Use a pipe.
         (start-process-shell-command "weechat-relay-cmd" bname cmd)))))
 
+(setq websocket-debug t)
+(defun weechat--relay-web-socket (bname host port)
+  (weechat-relay-log (format "WS %s:%s" host port) :info)
+  (require 'websocket)
+  (websocket-conn
+   (websocket-open
+	(format "wss://%s:%d/weechat" host port)
+	:on-open (lambda (_websocket)
+			   (weechat-relay-log "Connected to weechat relay")))
+	:on-close (lambda (_websocket)
+				(weechat-relay-log "Weechat websocket closed."))))
+
 (defun weechat-relay-connect (host port mode &optional callback)
   "Open a new weechat relay connection to HOST at PORT.
 
@@ -588,10 +600,12 @@ Optional argument CALLBACK Called after initialization is finished."
       (delete-region (point-min) (point-max))))
   (let* ((pfun (cond
                 ((or (null mode) (eq mode 'plain)) #'weechat--relay-plain-socket)
+                ((or (eq mode t) (eq mode 'ws)) #'weechat--relay-web-socket)
                 ((or (eq mode t) (eq mode 'ssl)) #'weechat--relay-tls-socket)
                 ((stringp mode) (weechat--relay-from-command mode))))
          (process
           (funcall pfun weechat-relay-buffer-name host port)))
+    (set-process-buffer process (get-buffer weechat-relay-buffer-name))
     (set-process-sentinel process #'weechat--relay-process-sentinel)
     (set-process-coding-system process 'binary)
     (set-process-filter process #'weechat--relay-process-filter)

@@ -57,6 +57,7 @@ String: command to run."
   :type '(choice
           (const :tag "Plain" 'plain)
           (const :tag "SSL/TLS" 'ssl)
+          (const :tag "Websocket" 'ws)
           (string :tag "Command to run"))
   :group 'weechat)
 
@@ -630,9 +631,9 @@ and port number respectively."
           (mode (let*
                     ((minibuffer-local-completion-map weechat-mode-completion-map)
                      (modestr (completing-read
-                               (format "Mode (`plain', `ssl' or command, default `%s'): "
+                               (format "Mode (`plain', `ssl', `websocket' or command, default `%s'): "
                                        weechat-mode-default)
-                               '("plain" "ssl" "ssh -W localhost:%p %h")
+                               '("plain" "ssl" "websocket" "ssh -W localhost:%p %h")
                                nil nil nil 'weechat-mode-history
                                ;; NOTE: `completing-read' is fine when
                                ;; passed a symbol, but helm breaks.
@@ -643,6 +644,7 @@ and port number respectively."
                    ((string= modestr "") nil)
                    ((string= modestr "plain") 'plain)
                    ((string= modestr "ssl") 'ssl)
+                   ((string= modestr "websocket"))
                    (t modestr)))))
      (setq weechat-last-port port)
      (list
